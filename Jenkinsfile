@@ -35,7 +35,7 @@ node {
 
         try {
             def toxEnvirons = sh(returnStdout: true,
-                                 script: "tox -a tox -a | egrep '^(unit|integration|functional|javascript|docs)' | paste -sd ,").trim().split(',')
+                                 script: "tox -a tox -a | egrep '^(unit|integration|functional|javascript|docs)' | egrep -v '(py35|django18)' | paste -sd ,").trim().split(',')
             echo "Found these tox environments: ${toxEnvirons}"
             for (int i = 0; i < toxEnvirons.length; i++) {
                 stage("Tox ${toxEnvirons[i]}") {
@@ -49,21 +49,6 @@ node {
         } finally {
             junit "reports/**/*-results.xml"
             step([$class: 'CoberturaPublisher', coberturaReportFile: 'reports/**/*coverage.xml'])
-        }
-
-        stage("PyLint") {
-            lastStage = env.STAGE_NAME
-            sh "tox -e pylint"
-            step([
-                $class                     : 'WarningsPublisher',
-                parserConfigurations       : [[
-                                              parserName: 'PYLint',
-                                                pattern   : 'reports/pylint.txt'
-                                            ]],
-                unstableTotalAll           : '1680',
-                failedTotalAll             : '1730',
-                usePreviousBuildAsReference: true
-            ])
         }
 
         stage("Lines of code") {
